@@ -1,5 +1,5 @@
-#ifndef GLINT_BASE_MEMORY_MEMORY_H
-#define GLINT_BASE_MEMORY_MEMORY_H
+#ifndef GLINT_BASE_MEMORY_MEMORY_UTIL_H
+#define GLINT_BASE_MEMORY_MEMORY_UTIL_H
 
 #define g_memory_copy(dst, src, size) memmove((dst), (src), (size))
 #define g_memory_set(dst, byte, size) memset((dst), (byte), (size))
@@ -19,4 +19,4 @@
 #define g_memory_match_struct(a, b) g_memory_match((a), (b), sizeof(*(a)))
 #define g_memory_match_array(a, b) g_memory_match((a), (b), sizeof(a))
 
-#endif // GLINT_BASE_MEMORY_MEMORY_H
+#endif // GLINT_BASE_MEMORY_MEMORY_UTIL_H
