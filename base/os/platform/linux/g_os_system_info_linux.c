@@ -4,9 +4,9 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 
-internal g_system_info* g_os_get_system_info(void)
+internal system_info* os_get_system_info(void)
 {
-	local_persist g_system_info info   = {0};
+	local_persist system_info info   = {0};
 	local_persist b8			cached = 0;
 
 	if (!cached)

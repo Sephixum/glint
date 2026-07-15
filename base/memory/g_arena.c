@@ -7,7 +7,7 @@
 
 #include <memory.h>
 
-internal g_arena* g_arena_create(g_arena_params* params)
+internal arena* arena_create(arena_params* params)
 {
 	u64 reserve_size = params->reserve_size;
 	u64 commit_size	 = params->commit_size;
@@ -16,7 +16,7 @@ internal g_arena* g_arena_create(g_arena_params* params)
 	if (base == 0)
 	{
 		// Round up the reserve/commit sizes
-		if (params->flags & g_arena_flag_large_pages)
+		if (params->flags & arena_flag_large_pages)
 		{
 			reserve_size = g_align_pow2(reserve_size, g_os_get_system_info()->large_page_size);
 			commit_size	 = g_align_pow2(commit_size, g_os_get_system_info()->large_page_size);
@@ -27,7 +27,7 @@ internal g_arena* g_arena_create(g_arena_params* params)
 			commit_size	 = g_align_pow2(commit_size, g_os_get_system_info()->page_size);
 		}
 
-		if (params->flags & g_arena_flag_large_pages)
+		if (params->flags & arena_flag_large_pages)
 		{
 			base = g_os_memory_reserve_large(reserve_size);
 			g_os_memory_commit_large(base, commit_size);
@@ -39,13 +39,13 @@ internal g_arena* g_arena_create(g_arena_params* params)
 		}
 	}
 
-	g_arena* arena				= base;
+	arena* arena				= base;
 	arena->current				= arena;
 	arena->flags				= params->flags;
 	arena->commit_size			= commit_size;
 	arena->reserve_size			= reserve_size;
 	arena->base_position		= 0;
-	arena->position				= g_arena_header_size;
+	arena->position				= arena_header_size;
 	arena->commit				= commit_size;
 	arena->reserve				= reserve_size;
 	arena->allocation_site_file = params->allocation_site_file;
@@ -56,20 +56,20 @@ internal g_arena* g_arena_create(g_arena_params* params)
 	return arena;
 }
 
-internal void g_arena_destroy(g_arena* arena)
+internal void arena_destroy(arena* a)
 {
-	for (g_arena *n = arena->current, *prev = 0; n != 0; n = prev)
+	for (arena *n = a->current, *prev = 0; n != 0; n = prev)
 	{
 		prev = n->prev;
 		g_os_memory_release(n, n->reserve);
 	}
 }
 
-internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
+internal void* arena_push(arena* a, u64 size, u64 align, b8 zero)
 {
-	g_arena* current = arena->current;
-	u64		 pos_pre = g_align_pow2(current->position, align);
-	u64		 pos_pst = pos_pre + size;
+	arena* current = a->current;
+	u64	   pos_pre = g_align_pow2(current->position, align);
+	u64	   pos_pst = pos_pre + size;
 
 	u64 size_to_zero = 0;
 	if (zero)
@@ -78,12 +78,12 @@ internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
 	}
 
 	// Chain If Needed
-	if (current->reserve < pos_pst && !(arena->flags & g_arena_flag_no_chain))
+	if (current->reserve < pos_pst && !(a->flags & arena_flag_no_chain))
 	{
-		g_arena* new_block = 0;
+		arena* new_block = 0;
 		{
-			g_arena* prev_block = 0;
-			for (new_block = arena->free_last, prev_block = 0; new_block != 0;
+			arena* prev_block = 0;
+			for (new_block = a->free_last, prev_block = 0; new_block != 0;
 				 prev_block = new_block, new_block = new_block->prev)
 			{
 				if (new_block->reserve >= g_align_pow2(new_block->position, align) + size)
@@ -94,7 +94,7 @@ internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
 					}
 					else
 					{
-						arena->free_last = new_block->prev;
+						a->free_last = new_block->prev;
 					}
 					break;
 				}
@@ -105,16 +105,16 @@ internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
 		{
 			u64 reserve_size = current->reserve_size;
 			u64 commit_size	 = current->commit_size;
-			if (size + g_arena_header_size > reserve_size)
+			if (size + arena_header_size > reserve_size)
 			{
-				reserve_size = g_align_pow2(size + g_arena_header_size, align);
-				commit_size	 = g_align_pow2(size + g_arena_header_size, align);
+				reserve_size = g_align_pow2(size + arena_header_size, align);
+				commit_size	 = g_align_pow2(size + arena_header_size, align);
 			}
-			new_block = g_arena_create(&(g_arena_params){.reserve_size		   = reserve_size,
-														 .commit_size		   = commit_size,
-														 .flags				   = current->flags,
-														 .allocation_site_file = current->allocation_site_file,
-														 .allocation_site_line = current->allocation_site_line});
+			new_block = arena_create(&(arena_params){.reserve_size		   = reserve_size,
+													 .commit_size		   = commit_size,
+													 .flags				   = current->flags,
+													 .allocation_site_file = current->allocation_site_file,
+													 .allocation_site_line = current->allocation_site_line});
 
 			size_to_zero = 0;
 		}
@@ -124,7 +124,7 @@ internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
 		}
 
 		new_block->base_position = current->base_position + current->reserve;
-		g_single_ll_stack_push_n(arena->current, new_block, prev);
+		g_single_ll_stack_push_n(a->current, new_block, prev);
 
 		current = new_block;
 		pos_pre = g_align_pow2(current->position, align);
@@ -139,7 +139,7 @@ internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
 		u64 commit_pst_clamped = g_clamp_top(commit_pst_aligned, current->reserve);
 		u64 commit_size		   = commit_pst_clamped - current->commit;
 		u8* commit_ptr		   = (u8*)current + current->commit;
-		if (current->flags & g_arena_flag_large_pages)
+		if (current->flags & arena_flag_large_pages)
 		{
 			g_os_memory_commit_large(commit_ptr, commit_size);
 		}
@@ -161,43 +161,43 @@ internal void* g_arena_push(g_arena* arena, u64 size, u64 align, b8 zero)
 	return result;
 }
 
-internal u64 g_arena_pos(g_arena* arena)
+internal u64 arena_pos(arena* a)
 {
-	g_arena* current = arena->current;
-	u64		 pos	 = current->base_position + current->position;
+	arena* current = a->current;
+	u64	   pos	   = current->base_position + current->position;
 	return pos;
 }
 
-internal void g_arena_pop_to(g_arena* arena, u64 pos)
+internal void arena_pop_to(arena* a, u64 pos)
 {
-	u64		 big_pos = g_clamp_bot(g_arena_header_size, pos);
-	g_arena* current = arena->current;
+	u64	   big_pos = g_clamp_bot(arena_header_size, pos);
+	arena* current = a->current;
 
-	for (g_arena* prev = 0; current->base_position >= big_pos; current = prev)
+	for (arena* prev = 0; current->base_position >= big_pos; current = prev)
 	{
 		prev			  = current->prev;
-		current->position = g_arena_header_size;
-		g_single_ll_stack_push_n(arena->free_last, current, prev);
+		current->position = arena_header_size;
+		g_single_ll_stack_push_n(a->free_last, current, prev);
 	}
 
-	arena->current = current;
-	u64 new_pos	   = big_pos - current->base_position;
+	a->current	= current;
+	u64 new_pos = big_pos - current->base_position;
 	g_assert(new_pos <= current->position);
 	current->position = new_pos;
 }
 
-internal void g_arena_clear(g_arena* arena)
+internal void arena_clear(arena* a)
 {
-	g_arena_pop_to(arena, 0);
+	arena_pop_to(a, 0);
 }
 
-internal void g_arena_pop(g_arena* arena, u64 amt)
+internal void arena_pop(arena* a, u64 amt)
 {
-	u64 pos_old = g_arena_pos(arena);
+	u64 pos_old = arena_pos(a);
 	u64 pos_new = pos_old;
 	if (amt < pos_old)
 	{
 		pos_new = pos_old - amt;
 	}
-	g_arena_pop_to(arena, pos_new);
+	arena_pop_to(a, pos_new);
 }

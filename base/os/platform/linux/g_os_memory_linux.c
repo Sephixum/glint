@@ -2,7 +2,7 @@
 
 #include <sys/mman.h>
 
-internal void *g_os_memory_reserve(u64 size)
+internal void *os_memory_reserve(u64 size)
 {
 	if (size == 0)
 	{
@@ -18,7 +18,7 @@ internal void *g_os_memory_reserve(u64 size)
 	return result;
 }
 
-internal b8 g_os_memory_commit(void *ptr, u64 size)
+internal b8 os_memory_commit(void *ptr, u64 size)
 {
 	i32 res = 0;
 
@@ -37,18 +37,18 @@ internal b8 g_os_memory_commit(void *ptr, u64 size)
 	return 1;
 }
 
-internal void g_os_memory_decommit(void *ptr, u64 size)
+internal void os_memory_decommit(void *ptr, u64 size)
 {
 	madvise(ptr, size, MADV_DONTNEED);
 	mprotect(ptr, size, PROT_NONE);
 }
 
-internal void g_os_memory_release(void *ptr, u64 size)
+internal void os_memory_release(void *ptr, u64 size)
 {
 	munmap(ptr, size);
 }
 
-internal void *g_os_memory_reserve_large(u64 size)
+internal void *os_memory_reserve_large(u64 size)
 {
 	void *result = mmap(0, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
 	if (result == MAP_FAILED)
@@ -58,7 +58,7 @@ internal void *g_os_memory_reserve_large(u64 size)
 	return result;
 }
 
-internal b32 g_os_memory_commit_large(void *ptr, u64 size)
+internal b32 os_memory_commit_large(void *ptr, u64 size)
 {
 	u32 res = 0;
 

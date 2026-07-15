@@ -1,3 +1,6 @@
-vendor.gvf
-sdl3/*
-!/sdl3/vendor.sh
+# vendor.gvf
+# sdl3/*
+# !/sdl3/vendor.sh
+*
+!/*/vendor.sh
+!vendor.sh

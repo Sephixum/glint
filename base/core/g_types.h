@@ -6,7 +6,6 @@
 #define internal static
 #define global static
 #define local_persist static
-
 typedef uint8_t	 u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -21,6 +20,8 @@ typedef i32		 b32;
 typedef i64		 b64;
 typedef float	 f32;
 typedef double	 f64;
+
+typedef u64 version;
 
 typedef union u128 u128;
 union u128
@@ -57,5 +58,29 @@ union u512
 	f32	 f32[16];
 	f64	 f64[8];
 };
+
+typedef struct range_i32
+{
+	i32 min;
+	i32 max;
+} range_i32;
+
+typedef struct range_u32
+{
+	u32 min;
+	u32 max;
+} range_u32;
+
+typedef struct range_i64
+{
+	i64 min;
+	i64 max;
+} range_i64;
+
+typedef struct range_u64
+{
+	u64 min;
+	u64 max;
+} range_u64;
 
 #endif // GLINT_BASE_CORE_TYPES_H
