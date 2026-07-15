@@ -1,0 +1,46 @@
+project/
+├── base/                       # Base layer
+│   ├── mem/                    # arenas, pools
+│   ├── ds/                     # containers, string8, handle pools
+│   ├── log/
+│   └── thread/                 # futex-based sync primitives
+│
+├── engine/
+│   ├── shared/                 # ABI boundary — the ONLY headers plugins & game.so include
+│   │   ├── engine_api.h        # struct Engine_API (services exposed TO plugins)
+│   │   ├── renderer_api.h      # struct Renderer_API (vtable plugins implement)
+│   │   ├── ui_api.h            # struct UI_API (vtable plugins implement)
+│   │   ├── plugin_abi.h        # version/size-stamped header every plugin exports
+│   │   └── types.h             # handles, Result(T) defs, math types shared across DLL boundary
+│   │
+│   ├── platform/                # thin SDL3 wrapper, not a plugin
+│   │   ├── platform_window.c    # SDL_CreateWindow, SDL_Vulkan/GL surface glue
+│   │   └── platform_input.c     # SDL event pump -> event queue
+│   │
+│   ├── core/                    # engine runtime proper
+│   │   ├── engine.c             # main loop, frame pacing, subsystem init order
+│   │   ├── app.c                # App_Config, entry point glue
+│   │   ├── event.c               # engine-wide event bus
+│   │   ├── resource/            # asset manager, generational handle pools for GPU resources
+│   │   └── plugin/              # generic plugin loader — dlopen/dlsym, hot reload watcher
+│   │       ├── plugin_loader.c
+│   │       └── plugin_registry.c
+│   │
+│   └── runtime_main.c            # builds engine into the final executable
+│
+├── plugins/
+│   ├── renderer_vulkan/          # renderer_vulkan.so — implements Renderer_API
+│   ├── renderer_opengl/          # renderer_opengl.so
+│   ├── ui_clay/                  # ui_clay.so — implements UI_API, sits in engine/ui/ reserved slot
+│   └── audio/                    
+│
+├── game/
+│   ├── game.c                    # game.so — hot reloadable, implements Game_API
+│   └── game_state.h              # lives in shared/ or here, whichever crosses reload boundary
+│
+├── vendor/
+│   └── sdl3/
+│
+└── build/
+    ├── build.sh
+    └── unity/                    # unity build TUs per module

@@ -1,0 +1,68 @@
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+# Indentation
+IndentWidth:     4
+TabWidth:        4
+UseTab:          Always
+
+# Braces
+BreakBeforeBraces:  Allman
+
+# Pointers & references (attach to type, not variable)
+PointerAlignment:    Left
+ReferenceAlignment:  Left
+
+# Alignments
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignOperands: true
+AlignTrailingComments: true
+
+# Functions
+BinPackArguments: false
+BinPackParameters: false
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+AllowShortFunctionsOnASingleLine: Empty
+
+# Namespaces
+NamespaceIndentation: None
+
+# Column limit
+ColumnLimit: 120
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+
+# C++11
+Cpp11BracedListStyle: true
+
+# Comments
+ReflowComments: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+
+# Align variable declarations
+AlignAfterOpenBracket: Align
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+
+# Const style
+DerivePointerAlignment: true
+QualifierAlignment: Right
+
+# Constructor member initialization
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+
+SortIncludes: Never
+
+IndentPPDirectives: AfterHash
+
+...
