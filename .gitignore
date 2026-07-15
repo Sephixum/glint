@@ -56,3 +56,5 @@ dkms.conf
 
 !vendor/gather_vendored.sh
 !vendor/*/vendor.sh
+
+compile_commands.json

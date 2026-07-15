@@ -246,4 +246,10 @@ read_only global u8 g_base64_reverse[128] = {
 
 #define g_bit(x) (1 << (x))
 
+#define g_align_pow2(x, b) (((x) + (b) - 1) & (~((b) - 1)))
+#define g_align_down_pow2(x, b) ((x) & (~((b) - 1)))
+#define g_align_pad_pow2(x, b) ((0 - (x)) & ((b) - 1))
+#define g_is_pow2(x) ((x) != 0 && ((x) & ((x) - 1)) == 0)
+#define g_is_pow2_or_zero(x) ((((x) - 1) & (x)) == 0)
+
 #endif // GLINT_BASE_UTIL_UTIL_H
