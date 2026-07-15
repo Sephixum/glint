@@ -1,7 +1,7 @@
 #ifndef GLINT_BASE_CORE_TYPES_H
 #define GLINT_BASE_CORE_TYPES_H
 
-#include <cstdint>
+#include <stdint.h>
 
 #define internal static
 #define global static
