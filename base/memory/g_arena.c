@@ -18,24 +18,24 @@ internal arena* arena_create(arena_params* params)
 		// Round up the reserve/commit sizes
 		if (params->flags & arena_flag_large_pages)
 		{
-			reserve_size = g_align_pow2(reserve_size, g_os_get_system_info()->large_page_size);
-			commit_size	 = g_align_pow2(commit_size, g_os_get_system_info()->large_page_size);
+			reserve_size = g_align_pow2(reserve_size, os_get_system_info()->large_page_size);
+			commit_size	 = g_align_pow2(commit_size, os_get_system_info()->large_page_size);
 		}
 		else
 		{
-			reserve_size = g_align_pow2(reserve_size, g_os_get_system_info()->page_size);
-			commit_size	 = g_align_pow2(commit_size, g_os_get_system_info()->page_size);
+			reserve_size = g_align_pow2(reserve_size, os_get_system_info()->page_size);
+			commit_size	 = g_align_pow2(commit_size, os_get_system_info()->page_size);
 		}
 
 		if (params->flags & arena_flag_large_pages)
 		{
-			base = g_os_memory_reserve_large(reserve_size);
-			g_os_memory_commit_large(base, commit_size);
+			base = os_memory_reserve_large(reserve_size);
+			os_memory_commit_large(base, commit_size);
 		}
 		else
 		{
-			base = g_os_memory_reserve(reserve_size);
-			g_os_memory_commit(base, commit_size);
+			base = os_memory_reserve(reserve_size);
+			os_memory_commit(base, commit_size);
 		}
 	}
 
@@ -61,7 +61,7 @@ internal void arena_destroy(arena* a)
 	for (arena *n = a->current, *prev = 0; n != 0; n = prev)
 	{
 		prev = n->prev;
-		g_os_memory_release(n, n->reserve);
+		os_memory_release(n, n->reserve);
 	}
 }
 
@@ -141,11 +141,11 @@ internal void* arena_push(arena* a, u64 size, u64 align, b8 zero)
 		u8* commit_ptr		   = (u8*)current + current->commit;
 		if (current->flags & arena_flag_large_pages)
 		{
-			g_os_memory_commit_large(commit_ptr, commit_size);
+			os_memory_commit_large(commit_ptr, commit_size);
 		}
 		else
 		{
-			g_os_memory_commit(commit_ptr, commit_size);
+			os_memory_commit(commit_ptr, commit_size);
 		}
 		current->commit = commit_pst_clamped;
 	}
@@ -200,4 +200,76 @@ internal void arena_pop(arena* a, u64 amt)
 		pos_new = pos_old - amt;
 	}
 	arena_pop_to(a, pos_new);
+}
+
+internal temp_arena temp_arena_begin(arena* a)
+{
+	temp_arena temp;
+	temp.arena = a;
+	temp.pos = arena_pos(a);
+	return temp;
+}
+
+internal void temp_arena_end(temp_arena temp)
+{
+	arena_pop_to(temp.arena, temp.pos);
+}
+
+// Thread-local scratch arenas
+#define SCRATCH_ARENA_COUNT 2
+
+typedef struct scratch_arena_pool
+{
+	arena* arenas[SCRATCH_ARENA_COUNT];
+	b8 initialized;
+} scratch_arena_pool;
+
+thread_local scratch_arena_pool tls_scratch_pool = {0};
+
+internal void scratch_arena_pool_init(void)
+{
+	if (!tls_scratch_pool.initialized)
+	{
+		for (u64 i = 0; i < SCRATCH_ARENA_COUNT; i++)
+		{
+			tls_scratch_pool.arenas[i] = arena_create_default(.name = "scratch_arena");
+		}
+		tls_scratch_pool.initialized = 1;
+	}
+}
+
+internal temp_arena arena_get_scratch(arena** conflicts, u64 conflict_count)
+{
+	scratch_arena_pool_init();
+	
+	arena* result = 0;
+	for (u64 i = 0; i < SCRATCH_ARENA_COUNT; i++)
+	{
+		arena* candidate = tls_scratch_pool.arenas[i];
+		
+		// Check if this arena conflicts with any of the provided arenas
+		b8 has_conflict = 0;
+		for (u64 j = 0; j < conflict_count; j++)
+		{
+			if (candidate == conflicts[j])
+			{
+				has_conflict = 1;
+				break;
+			}
+		}
+		
+		if (!has_conflict)
+		{
+			result = candidate;
+			break;
+		}
+	}
+	
+	// Fallback to first scratch arena if all conflict (shouldn't happen with 2+ arenas)
+	if (result == 0)
+	{
+		result = tls_scratch_pool.arenas[0];
+	}
+	
+	return temp_arena_begin(result);
 }

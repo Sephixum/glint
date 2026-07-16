@@ -1,6 +1,35 @@
 #ifndef GLINT_BASE_CORE_PLATFORM_AND_COMPILER_DEFINES_H
 #define GLINT_BASE_CORE_PLATFORM_AND_COMPILER_DEFINES_H
 
+// ============================================================================
+// Language Standard Detection
+// ============================================================================
+
+// Check for GNU extensions
+#if defined(__GNUC__) && !defined(__STRICT_ANSI__)
+#	define GLINT_GNU_EXTENSIONS 1
+#else
+#	define GLINT_GNU_EXTENSIONS 0
+#endif
+
+// Check for POSIX
+#if defined(_POSIX_VERSION)
+#	define GLINT_POSIX 1
+#else
+#	define GLINT_POSIX 0
+#endif
+
+// Feature test: determine if we have POSIX or need to use alternatives
+#if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L
+#	define GLINT_HAS_SYSCONF 1
+#else
+#	define GLINT_HAS_SYSCONF 0
+#endif
+
+// ============================================================================
+// Compiler Detection
+// ============================================================================
+
 #if defined(__clang__)
 #	define GLINT_COMPILER_CLANG 1
 #	if defined(_WIN32)
@@ -284,22 +313,22 @@
 #	error "Missing pointer-to-integer cast for this architecture."
 #endif
 
-typedef enum g_operating_system
+typedef enum operating_system
 {
-	g_operating_system_null,
-	g_operating_system_windows,
-	g_operating_system_linux,
-	g_operating_system_mac,
-	g_operating_system_COUNT,
+	operating_system_null,
+	operating_system_windows,
+	operating_system_linux,
+	operating_system_mac,
+	operating_system_COUNT,
 #if GLINT_OS_WINDOWS
-	g_operating_system_current = g_operating_system_windows,
+	operating_system_current = operating_system_windows,
 #elif GLINT_OS_LINUX
-	g_operating_system_current = g_operating_system_linux,
+	operating_system_current = operating_system_linux,
 #elif GLINT_OS_MAC
-	g_operating_system_current = g_operating_system_max,
+	operating_system_current = operating_system_max,
 #else
-	g_operating_system_current = g_operating_system_null,
+	operating_system_current = operating_system_null,
 #endif
-} g_operating_system;
+} operating_system;
 
 #endif // GLINT_BASE_CORE_PLATFORM_AND_COMPILER_DEFINES_H

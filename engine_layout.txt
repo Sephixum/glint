@@ -5,6 +5,8 @@ project/
 │   ├── log/
 │   └── thread/                 # futex-based sync primitives
 │
+├── metagen/                       # meta interface
+│
 ├── engine/
 │   ├── shared/                 # ABI boundary — the ONLY headers plugins & game.so include
 │   │   ├── engine_api.h        # struct Engine_API (services exposed TO plugins)
