@@ -1,5 +1,5 @@
 #include "g_arena.h"
-#include "../os/g_systme_info.h"
+#include "../os/g_os_system_info.h"
 #include "../os/g_os_memory.h"
 #include "../util/g_util.h"
 #include "../util/g_linked_list.h"
