@@ -1,6 +1,13 @@
-# vendor.gvf
-# sdl3/*
-# !/sdl3/vendor.sh
-*
-!/*/vendor.sh
-!vendor.sh
+# Generated aggregate flags
+/vendor.gvf
+
+# Dependency downloads and build products
+/*/src/
+/*/build/
+/*/install/
+/*/*.gvf
+
+# Keep dependency recipes and documentation
+!/.gitignore
+!/README.md
+!/*/vendor.py

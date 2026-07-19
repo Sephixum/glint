@@ -54,7 +54,7 @@ dkms.conf
 # debug information files
 *.dwo
 
-!vendor/gather_vendored.sh
-!vendor/*/vendor.sh
+# Keep vendor recipes
+!vendor/*/vendor.py
 
 compile_commands.json
