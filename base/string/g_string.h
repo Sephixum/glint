@@ -4,7 +4,11 @@
 #include "../core/g_types.h"
 #include "../util/g_util.h"
 #include "../memory/g_arena.h"
+#include "../duration/g_duration.h"
+#include "../os/g_os_time.h"
 #include <stdarg.h>
+
+typedef struct os_time os_time;
 
 typedef struct string
 {
@@ -95,6 +99,9 @@ internal string string_create(u8* str, u64 size);
 internal string string_range(u8* first, u8* one_past_last);
 internal string string_zero(void);
 
+internal string os_time_to_string(arena* a, os_time t);
+internal string os_date_to_string(arena* a, os_date d);
+
 internal string string_from_cstr(char* c);
 internal u8*	cstr_from_string(arena* a, string str);
 internal string string_cstr_capped(void* cstr, void* cap);
@@ -129,6 +136,7 @@ internal b8	 string_char_match(u8 a, u8 b, string_match_flags flags);
 internal b8	 string_match_wildcard(string str, string pattern, string_match_flags flags);
 internal u64 string_find_needle(string str, u64 start_pos, string needle, string_match_flags flags);
 internal u64 string_find_needle_reverse(string str, u64 start_pos, string needle, string_match_flags flags);
+internal b8	 string_contains(string str, string needle, string_match_flags flags);
 internal b8	 string_is_before(string a, string b);
 
 internal string		 string_from_memory_size(arena* a, u64 size);
@@ -138,6 +146,7 @@ internal string		 string_from_bits_u64(arena* a, u64 x);
 internal string		 string_from_u64(arena* a, u64 u64_value, u32 radix, u8 min_digits, u8 digit_group_separator);
 internal string		 string_from_i64(arena* a, i64 s64_value, u32 radix, u8 min_digits, u8 digit_group_separator);
 internal string		 string_from_f64(arena* a, f64 f64_value);
+internal string		 string_from_duration(arena* a, duration d);
 internal string_list string_split(arena* a, string str, string delim, string_split_flags flags);
 
 #define s(S) string_lit_comp(S)
@@ -196,6 +205,31 @@ internal inline force_inline string string_from_g_operating_system(operating_sys
 	case operating_system_mac:
 		return string_lit_comp("mac");
 	case operating_system_COUNT:
+		return string_lit_comp("COUNT");
+	default:
+		return string_lit_comp("unknown");
+	}
+}
+
+internal inline force_inline string string_from_os_weekday(os_weekday w)
+{
+	switch (w)
+	{
+	case os_weekday_sunday:
+		return string_lit_comp("sunday");
+	case os_weekday_monday:
+		return string_lit_comp("monday");
+	case os_weekday_tuesday:
+		return string_lit_comp("tuesday");
+	case os_weekday_wednesday:
+		return string_lit_comp("wednesday");
+	case os_weekday_thursday:
+		return string_lit_comp("thursday");
+	case os_weekday_friday:
+		return string_lit_comp("friday");
+	case os_weekday_saturday:
+		return string_lit_comp("saturday");
+	case os_weekday_COUNT:
 		return string_lit_comp("COUNT");
 	default:
 		return string_lit_comp("unknown");

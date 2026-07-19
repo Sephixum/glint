@@ -1,9 +1,11 @@
 #include "g_string.h"
+#include "../core/g_platform_and_compiler_defines.h"
 #include "../util/g_memory.h"
 #include "../util/g_linked_list.h"
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define GLINT_UTF_REPLACEMENT_CODEPOINT 0xFFFDu
 #define GLINT_UTF_MAX_CODEPOINT 0x10FFFFu
@@ -318,6 +320,46 @@ internal string string_from_cstr(char* c)
 	string result = string_create((u8*)c, cstr_length((u8*)c));
 	return result;
 }
+
+internal string os_time_to_string(arena* a, os_time t)
+{
+	os_date d = os_time_to_date(t);
+
+	char buf[32];
+	int	 n = snprintf(buf,
+					  sizeof(buf),
+					  "%04u-%02u-%02u %02u:%02u:%02u.%03llu",
+					  d.year,
+					  d.month,
+					  d.day,
+					  d.hour,
+					  d.minute,
+					  d.second,
+					  (unsigned long long)(d.nanosecond / 1'000'000));
+	if (n < 0) return string_zero();
+
+	return string_copy(a, (string){(u8*)buf, (u64)n});
+}
+
+internal string os_date_to_string(arena* a, os_date d)
+{
+	char buf[48];
+	int	 n = snprintf(buf,
+					  sizeof(buf),
+					  "%04u-%02u-%02u %02u:%02u:%02u.%03llu %s",
+					  d.year,
+					  d.month,
+					  d.day,
+					  d.hour,
+					  d.minute,
+					  d.second,
+					  (unsigned long long)(d.nanosecond / 1'000'000),
+					  string_from_os_weekday(d.weekday).str);
+	if (n < 0) return string_zero();
+
+	return string_copy(a, (string){(u8*)buf, (u64)n});
+}
+
 internal u8* cstr_from_string(arena* a, string str)
 {
 	u8* buf = arena_push_array(a, u8, str.size + 1);
@@ -823,6 +865,12 @@ internal u64 string_find_needle(string str, u64 start_pos, string needle, string
 	return result;
 }
 
+internal b8 string_contains(string str, string needle, string_match_flags flags)
+{
+	// string_find_needle returns str.size when the needle isn't present.
+	return string_find_needle(str, 0, needle, flags) != str.size;
+}
+
 internal u64 string_find_needle_reverse(string str, u64 start_pos, string needle, string_match_flags flags)
 {
 	u64 result = 0;
@@ -1110,6 +1158,52 @@ internal string string_from_f64(arena* a, f64 f64_value)
 	return string_create(buf, size);
 }
 
+internal string string_from_duration(arena* a, duration d)
+{
+	u8* buf = arena_push_array(a, u8, 64);
+	u64 ns  = d.nanos;
+	u64 size;
+
+	if (ns < 1000)
+	{
+		size = (u64)snprintf((char*)buf, 64, "%lluns", (unsigned long long)ns);
+	}
+	else if (ns < 1000000)
+	{
+		f64 us = (f64)ns / 1000.0;
+		size   = (u64)snprintf((char*)buf, 64, "%.2fus", us);
+	}
+	else if (ns < 1000000000)
+	{
+		f64 ms = (f64)ns / 1000000.0;
+		size   = (u64)snprintf((char*)buf, 64, "%.2fms", ms);
+	}
+	else if (ns < 60000000000)
+	{
+		f64 s = (f64)ns / 1000000000.0;
+		size  = (u64)snprintf((char*)buf, 64, "%.2fs", s);
+	}
+	else
+	{
+		duration_extended de = duration_break(d);
+		if (de.hours > 0)
+		{
+			size = (u64)snprintf((char*)buf, 64, "%lluh %llum %llus",
+								 (unsigned long long)de.hours,
+								 (unsigned long long)de.minutes,
+								 (unsigned long long)de.seconds);
+		}
+		else
+		{
+			size = (u64)snprintf((char*)buf, 64, "%llum %llus",
+								 (unsigned long long)de.minutes,
+								 (unsigned long long)de.seconds);
+		}
+	}
+
+	return string_create(buf, size);
+}
+
 internal string_list string_split(arena* a, string str, string delim, string_split_flags flags)
 {
 	string_list list		 = {0};
@@ -1342,9 +1436,28 @@ internal char** cstr_from_string_array(arena* a, string_array array)
 	g_not_implemented;
 }
 
+// Internal helper: byte index of the last path separator ('/' or '\') in `path`,
+// or `path.size` when there is none. Backs the path-slicing primitives below.
+internal u64 string_path__last_sep(string path)
+{
+	u64 sep = path.size;
+	for (u64 i = path.size; i-- > 0;)
+	{
+		if (char_is_slash(path.str[i]))
+		{
+			sep = i;
+			break;
+		}
+	}
+	return sep;
+}
 internal string string_strip_trailing_slashes(string path)
 {
-	g_not_implemented;
+	while (path.size > 0 && char_is_slash(path.str[path.size - 1]))
+	{
+		path.size -= 1;
+	}
+	return path;
 }
 internal path_style string_path_get_style(string path)
 {
@@ -1364,19 +1477,54 @@ internal b8 string_path_has_root(string path)
 }
 internal string string_path_dir_name(string path)
 {
-	g_not_implemented;
+	u64 sep = string_path__last_sep(path);
+	if (sep >= path.size)
+	{
+		return string_lit_comp(".");
+	}
+	if (sep == 0)
+	{
+		return string_lit_comp("/");
+	}
+	return string_prefix(path, sep);
 }
 internal string string_path_base_name(string path)
 {
-	g_not_implemented;
+	u64 sep = string_path__last_sep(path);
+	if (sep >= path.size)
+	{
+		return path;
+	}
+	return string_skip(path, sep + 1);
 }
 internal string string_path_ext(string path)
 {
-	g_not_implemented;
+	string base = string_path_base_name(path);
+	u64		dot  = base.size;
+	for (u64 i = base.size; i-- > 0;)
+	{
+		if (base.str[i] == '.')
+		{
+			dot = i;
+			break;
+		}
+	}
+	// No dot, or a leading dot (dotfile like ".bashrc") → no extension.
+	if (dot == 0 || dot >= base.size)
+	{
+		return string_zero();
+	}
+	return string_skip(base, dot);
 }
 internal string string_path_stem(string path)
 {
-	g_not_implemented;
+	string base = string_path_base_name(path);
+	string ext  = string_path_ext(path);
+	if (ext.size == 0)
+	{
+		return base;
+	}
+	return string_chop(base, ext.size);
 }
 internal string string_path_join(arena* a, string base, string relative)
 {
