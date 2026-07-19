@@ -158,7 +158,7 @@
 #endif
 
 #define GLINT_BUILD_VERSION_STRING_LITERAL                                                                             \
-	Stringify(GLINT_BUILD_VERSION_MAJOR) "." Stringify(GLINT_BUILD_VERSION_MINOR) "." Stringify(                       \
+	g_stringify(GLINT_BUILD_VERSION_MAJOR) "." g_stringify(GLINT_BUILD_VERSION_MINOR) "." g_stringify(                 \
 		GLINT_BUILD_VERSION_PATCH)
 
 #if GLINT_BUILD_DEBUG
@@ -219,7 +219,7 @@
 #endif
 
 #if GLINT_OS_WINDOWS
-#	if (GLITN_COMPILER_GCC || GLINT_COMPILER_CLANG)
+#	if (GLINT_COMPILER_GCC || GLINT_COMPILER_CLANG)
 #		define GLINT_DLL_EXPORT __attribute__((dllexport))
 #		define GLINT_DLL_IMPORT __attribute__((dllimport))
 #	else
@@ -325,7 +325,7 @@ typedef enum operating_system
 #elif GLINT_OS_LINUX
 	operating_system_current = operating_system_linux,
 #elif GLINT_OS_MAC
-	operating_system_current = operating_system_max,
+	operating_system_current = operating_system_mac,
 #else
 	operating_system_current = operating_system_null,
 #endif
