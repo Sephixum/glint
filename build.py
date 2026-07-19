@@ -54,13 +54,14 @@ INCLUDES = [
 ]
 
 # Standard C flags
-FLAGS = {"std": "-std=c23", "warnings": []}
+FLAGS = {"std": "-std=c23", "warnings": [], "libs": []}
 
 
 # Compiler — prefer gcc on Linux, clang on macOS
 if IS_LINUX:
     COMPILER = shutil.which("gcc") or "clang"
     FLAGS["std"] = "-std=gnu23"
+    FLAGS["libs"] += ["-lm", "-lpthread"]
 elif IS_MAC:
     COMPILER = "clang"
 else:
@@ -207,7 +208,10 @@ def build_base_object(flags):
 
 
 def generate_compile_commands(flags):
-    """Write compile_commands.json for clangd, covering base/base.c and every test."""
+    """
+        Write compile_commands.json
+        for clangd, covering base/base.c and every test.
+    """
     entries = [{
         "directory": str(ROOT),
         "command": f"{COMPILER} {' '.join(flags)} -c base/base.c -o build/base/base.o",
@@ -265,11 +269,40 @@ def find_tests():
 # ── Main ──────────────────────────────────────────────────────────────────
 
 
+def print_help():
+    print("""Glint Engine Build System
+
+Usage:  python build.py [options]
+
+Options:
+  -h, --help        Show this help message and exit.
+  --clean           Delete the build/ directory before building.
+  --debug           Compile with -g -O0 (debug symbols, no optimisations).
+                    Default is -O2 -DNDEBUG.
+  --test[=FILTER]   Build and run tests.  With an optional FILTER string,
+                    only tests whose name contains FILTER are run (e.g.
+                    --test=math runs g_test_math).
+  --vendor=NAME     Run a vendor sub-command (setup / clean / distclean).
+                    Use --vendor=all to run every vendor's sub-command.
+  --distclean       Combined with --vendor=all to fully remove vendor
+                    artefacts.
+
+Without --test, the full build runs: vendors are set up, base.o is compiled,
+plugins are built, compile_commands.json is regenerated, and every test is
+compiled and executed.
+""")
+
+
 def main():
     args = sys.argv[1:]
+
+    if "-h" in args or "--help" in args:
+        print_help()
+        return
+
     debug = "--debug" in args
     clean = "--clean" in args
-    test_only = "--test" in args
+    test_only = any(a.startswith("--test") for a in args)
     vendor_cmd = None
     test_filter = None
 
@@ -308,8 +341,7 @@ def main():
     # ── Flags ──────────────────────────────────────────────────────────
     vendor_includes, vendor_libs = collect_vendor_flags()
 
-    flags = [FLAGS["std"]] + FLAGS["warnings"]
-    flags += INCLUDES + vendor_includes
+    flags = [FLAGS["std"]] + FLAGS["warnings"] + FLAGS["libs"] + INCLUDES + vendor_includes
     if debug:
         flags += ["-g", "-O0"]
     else:
