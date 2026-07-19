@@ -1,6 +1,5 @@
-#include "../g_test_common.h"
-#include "../../base/core/g_platform_and_compiler_defines.h"
-#include "../../base/memory/g_arena.h"
+#include "tests/g_test_common.h"
+#include "base/base.h"
 
 static void test_arena_basic(void)
 {
@@ -181,18 +180,4 @@ static void register_arena_tests(void)
 	GLINT_TEST_REGISTER(test_arena_clear);
 }
 
-#include "../../base/memory/g_arena.c"
-
-// Include platform-specific OS implementations
-#if GLINT_OS_LINUX
-#	include "../../base/os/platform/linux/g_os_memory_linux.c"
-#	include "../../base/os/platform/linux/g_os_system_info_linux.c"
-#elif GLINT_OS_WINDOWS
-#	include "../../base/os/platform/windows/g_os_memory_windows.c"
-#	include "../../base/os/platform/windows/g_os_system_info_windows.c"
-#elif GLINT_OS_MAC
-// macOS implementations would go here
-#	error "macOS OS implementations not yet added"
-#else
-#	error "Unsupported OS"
-#endif
+#include "base/base.c"

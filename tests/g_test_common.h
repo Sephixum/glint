@@ -13,13 +13,10 @@ typedef struct test_state
 {
 	int passed;
 	int failed;
-	int current_suite_failed; // reset per-suite, lets you bail a suite early if you want
+	int current_suite_failed;
 } test_state;
 
-// Declare global test stats (defined in g_test_main.c)
 extern test_state global_test_stats;
-
-// ---- basic checks --------------------------------------------------------
 
 #define GLINT_TEST_CHECK(cond)                                                                                         \
 	do                                                                                                                 \
@@ -50,8 +47,6 @@ extern test_state global_test_stats;
 			fprintf(stderr, "\n");                                                                                     \
 		}                                                                                                              \
 	} while (0)
-
-// ---- typed equality checks ------------------------------------------------
 
 #define GLINT_TEST_CHECK_EQ_INT(a, b)                                                                                  \
 	do                                                                                                                 \
@@ -145,8 +140,6 @@ extern test_state global_test_stats;
 #define GLINT_TEST_CHECK_NULL(p) TEST_CHECK_MSG((p) == NULL, "%s expected NULL, got %p", #p, (void *)(p))
 #define GLINT_TEST_CHECK_NOT_NULL(p) TEST_CHECK_MSG((p) != NULL, "%s expected non-NULL", #p)
 
-// ---- sections / timing ----------------------------------------------------
-
 #define GLINT_TEST_SECTION(name) fprintf(stderr, "\n-- %s --\n", name)
 
 #define GLINT_TEST_TIMED(label, body)                                                                                  \
@@ -160,8 +153,6 @@ extern test_state global_test_stats;
 		fprintf(stderr, "  [%s] %.3f ms\n", label, _ms);                                                               \
 	} while (0)
 
-// ---- suite registration (optional, avoids editing main.c per test) -------
-
 typedef void (*PFN_test_entry)(void);
 
 typedef struct test_entry
@@ -172,9 +163,8 @@ typedef struct test_entry
 
 #define GLINT_TEST_MAX_ENTRIES 512
 
-// Declare globals (defined in g_test_main.c)
 extern test_entry global_test_entries[GLINT_TEST_MAX_ENTRIES];
-extern int global_test_entry_count;
+extern int		  global_test_entry_count;
 
 static inline void test_register(char const *name, PFN_test_entry fn)
 {
