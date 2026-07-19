@@ -1,5 +1,13 @@
-#include "../../../core/g_platform_and_compiler_defines.h"
-#include "../../g_os_memory.h"
+#include "core/g_platform_and_compiler_defines.h"
+
+#include "base/os/g_os_memory.h"
+#include "base/os/g_os_system_info.h"
+#include "base/core/g_platform_and_compiler_defines.h"
+
+internal system_info *os_get_system_info(void)
+{
+	g_not_implemented;
+}
 
 internal void *os_memory_reserve(u64 size)
 {
