@@ -58,3 +58,4 @@ dkms.conf
 !vendor/*/vendor.py
 
 compile_commands.json
+build/
